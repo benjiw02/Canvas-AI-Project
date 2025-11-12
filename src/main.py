@@ -1,7 +1,6 @@
+import pandasai
 import pandas as pd
-import pandasai as pai
 from pandasai_litellm import LiteLLM
-from pandasai import smart_dataframe as sdf
 from canvasapi import Canvas
 from canvasapi.exceptions import Unauthorized, Forbidden, CanvasException
 from prompt_toolkit.shortcuts import ProgressBar
@@ -44,22 +43,23 @@ def dictionize_assignment(course ,assignment):
         except:
             pass
     dict_assignment = {
-        'id': assignment.id,
-        'name': assignment.name,
-        'url': assignment.html_url,
-        'prob_description': assignment.description,
-        'max_points': assignment.points_possible,
-        'due_date': assignment.due_at,
-        'late_end_date': assignment.lock_at,
-        'type': assignment.grading_type,
-        'sub_type': ", ".join(assignment.submission_types),
+        'id': getattr(assignment, "id", None),
+        'name': getattr(assignment, "name", None),
+        'url': getattr(assignment, "html_url", None),
+        'prob_description': getattr(assignment, "description", None),
+        'max_points': getattr(assignment, "points_possible", None),
+        'due_date': getattr(assignment, "due_at", None),
+        'late_end_date': getattr(assignment, "lock_at", None),
+        'type': getattr(assignment, "grading_type", None),
+        'sub_type': ", ".join(getattr(assignment, "grading_type", None)),
         'timezone': "UTC",
         'score': score,
         'grade_state': graded,
         'rubric_exists': rubric_id,
         'rubric': rubric,
-        'in_final_grade_calc': assignment.omit_from_final_grade
+        'in_final_grade_calc': getattr(assignment, "omit_from_final_grade", None)
     }
+    return dict_assignment
 def allowed_courses(courses):
     all_courses = []
     for course in courses:
@@ -157,34 +157,33 @@ if __name__ == "__main__":
         for course in all_courses:
             course_names.append(course.name)
         asmn_list = assignments(all_courses)
+        course_objs = all_courses.copy()
         i = 0
         for course in asmn_list:
             for assingment in course:
-                asng_dictions.append(dictionize_assignment(all_courses[i], assingment))
+                asng_dictions.append(dictionize_assignment(course_objs, assingment))
             course_dictions.append(asng_dictions)
             i += 1
             asng_dictions.clear()
 
         #graded = grades(data)
     #inspect_paginated_list(data)
+    userName = input("Please enter your name: ")
     data = {
+        'users_name': userName,
         'courses': course_names,
-        'course Assignments': course
+        'course Assignments': course_dictions
     }
-    
     dataframe = pd.DataFrame(data)
 
-    userName = input("Please enter your name: ")
-    llm = LiteLLM(model="gemini-2.5-flash", gemini_api = GEMINI_KEY)
+    llm = LiteLLM(model="gemini-2.5-flash", api_key=GEMINI_KEY)
 
-    ai_dataframe = sdf.SmartDataframe(dataframe)
-    pai.config.llm = llm
-    pai.config.temperature = 40
-    pai.config.seed = 26
-
+    pandasai.config.llm = llm
+    pandasai.config.temperature = 0.4
+    pandasai.config.seed = 26
 
     while True:
-        prompt = ai_dataframe.chat(f"Hello {userName}, how may I help you?: ")
+        prompt = dataframe.chat(f"Hello {userName}, how may I help you?: ")
         print(prompt)
     
         
