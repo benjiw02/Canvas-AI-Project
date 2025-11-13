@@ -1,6 +1,6 @@
-import pandasai
+import pandasai as pai
 import pandas as pd
-from pandasai_litellm import LiteLLM
+from pandasai_litellm.litellm import LiteLLM
 from canvasapi import Canvas
 from canvasapi.exceptions import Unauthorized, Forbidden, CanvasException
 from prompt_toolkit.shortcuts import ProgressBar
@@ -42,7 +42,9 @@ def dictionize_assignment(course ,assignment):
                 rubric = "\n".join(rubric_list)
         except:
             pass
+    course_name = course.name
     dict_assignment = {
+        'course': course_name,
         'id': getattr(assignment, "id", None),
         'name': getattr(assignment, "name", None),
         'url': getattr(assignment, "html_url", None),
@@ -57,7 +59,6 @@ def dictionize_assignment(course ,assignment):
         'grade_state': graded,
         'rubric_exists': rubric_id,
         'rubric': rubric,
-        'in_final_grade_calc': getattr(assignment, "omit_from_final_grade", None)
     }
     return dict_assignment
 def allowed_courses(courses):
@@ -66,12 +67,12 @@ def allowed_courses(courses):
         try:
             name = course.name
             assignments = course.get_assignments()
-            print(f"Name: {name}\n")
+            #print(f"Name: {name}\n")
             #if name != "no-name":
             all_courses.append(course)
 
         except:
-            print("exception\n")
+            #print("exception\n")
             pass    
     return all_courses
 '''    
@@ -141,6 +142,7 @@ if __name__ == "__main__":
     asng_dictions = []
     course_dictions = []
     course_names = []
+    course_grades = []
     if not CANVAS_API and GEMINI_KEY:
         SystemExit("ERROR: Ensure Canvas and GEMINI API keys are stored in system variables as CANVAS_API_KEY and GEMINI_API_KEY")
 
@@ -157,34 +159,44 @@ if __name__ == "__main__":
         for course in all_courses:
             course_names.append(course.name)
         asmn_list = assignments(all_courses)
+
         course_objs = all_courses.copy()
         i = 0
         for course in asmn_list:
             for assingment in course:
-                asng_dictions.append(dictionize_assignment(course_objs, assingment))
-            course_dictions.append(asng_dictions)
+                asng_dictions.append(dictionize_assignment(course_objs[i], assingment))
             i += 1
-            asng_dictions.clear()
-
         #graded = grades(data)
     #inspect_paginated_list(data)
     userName = input("Please enter your name: ")
     data = {
         'users_name': userName,
         'courses': course_names,
-        'course Assignments': course_dictions
+        'quit_instructions': "Type Quit to exit program"
     }
-    dataframe = pd.DataFrame(data)
 
-    llm = LiteLLM(model="gemini-2.5-flash", api_key=GEMINI_KEY)
+    from pandasai import SmartDataframe
+    from pandasai.config import Config
+    from pandasai_litellm.litellm import LiteLLM
 
-    pandasai.config.llm = llm
-    pandasai.config.temperature = 0.4
-    pandasai.config.seed = 26
+    llm = LiteLLM(model="gemini/gemini-2.5-flash", provider="google_ai_studio", api_key=GEMINI_KEY)
 
-    while True:
-        prompt = dataframe.chat(f"Hello {userName}, how may I help you?: ")
+    config = Config(
+        llm=llm,
+        temperature=0.4,
+        seed=26
+    )
+    assingment_data = pd.DataFrame(asng_dictions)
+    user_info = pd.DataFrame(data)
+    ai_frame = pd.concat([user_info, assingment_data], ignore_index=True)
+
+    dataframe = SmartDataframe(ai_frame, config=config)
+
+    userinput = input("How may I help you: ", end="")
+    while userinput != "quit" and userinput != "Quit":
+        prompt = dataframe.chat(userinput)
         print(prompt)
+        userinput = input("How may I help you: ", end="")
     
         
         
