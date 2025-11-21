@@ -1,0 +1,9 @@
+beautifulsoup4==4.14.2
+canvasapi==3.3.0
+pandas==2.3.3
+pandasai==3.0.0
+pandasai_litellm==0.0.1
+prompt_toolkit==3.0.52
+PyPDF2==3.0.1
+python_docx==1.2.0
+python_pptx==1.0.2

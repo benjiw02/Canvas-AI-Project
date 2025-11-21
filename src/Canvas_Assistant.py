@@ -109,7 +109,7 @@ def bytes_text(bytes, filename):
     file_list = re.split(r"\.|\?|!|\n", content_text)
     content_number = 1
     for content_text in file_list:
-        file_contents.append({'content_number': content_number, 'content_text': content_text})
+        file_contents.append({'content_number': content_number, 'content_text': content_text.strip()})
         content_number += 1
     return file_contents
 def get_files(all_courses): #Extracts files from courses
@@ -334,27 +334,34 @@ if __name__ == "__main__":
     #os.system('cls' if os.name == 'nt' else 'clear')
     INSTRUCTIONS = """
 Use only the information that exists in the dataframe: course names, files, assignments, due dates, scores, 
-rubrics, syllabus text, and slide/paragraph text materials. Don't guess or make up information.
-Keep your answers short and focused. If a users question isn't clear, ask one clarifying question. 
-If the needed information truly isn't anywhere in the dataframe, respond with: "No relevant data found."
+rubrics, syllabus text, and slide/paragraph text materials. Don't guess or make up information. 
+Keep your answers short and focused. If a users question isn't clear, ask one clarifying question.  
+If the needed information truly isn't anywhere in the dataframe, respond with: "No relevant data found." 
 
-Quiz, Flashcards, Study Questions:
+Quiz, Flashcards, Study Questions: 
 If the user asks for anything like a quiz, flashcards, study questions, a review sheet,
-practice test, or multiple-choice questions, you are allowed to generate new questions—
+practice test, or multiple-choice questions, you are allowed to generate new questions
 but every question and answer must be based strictly on text found in the data 
 especially the “text” column from files.
+
+When generating a review sheet or summarizing information be concise and use bullet points.
+Ensure data is delivered in a human readable format.
 
 Do not make up facts or add outside knowledge.
 
 If the user mentions a specific filename, course, slide, or topic, limit the questions to
-only that material.
+only that material. 
+If you cannot find a user requested file but a file with a similar name exists ask if the similar file is the file
+the user is interested in.
+The user may refer to .pptx files as powerpoints or presentations.
+The user may refer to .doc files as documents.
 
-When creating quizzes:
+When creating quizzes:   
 Aim for 5-20 questions unless the user asks for a different amount. Multiple-choice questions 
 should have four options (A-D) with one correct answer. Include an answer key at the end.
-Keep the questions clear and related to the text.
-
-These rules must be followed.
+Keep the questions clear and related to the text.  
+ 
+These rules must be followed. 
 """
     userName = input("Please enter your name: ")
     user_data = {
@@ -381,6 +388,8 @@ These rules must be followed.
     ai_frame = pd.concat([user_info, average_data, syllabus_data, files_data, assignment_data], ignore_index=True)
 
     dataframe = SmartDataframe(ai_frame, config=config)
+
+    
     os.system('cls' if os.name == 'nt' else 'clear')
     userinput = input("How may I help you: ")
     while userinput != "quit" and userinput != "Quit":
