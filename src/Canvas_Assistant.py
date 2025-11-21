@@ -49,6 +49,7 @@ def assign_dicts(course ,assignment): #stores a assignement in a dictionary
                     points = fields.get('points', 0)
                     rubric_list.append(f".Desc: {desc}, points: {points}")
                 rubric = "\n".join(rubric_list)
+                rubric = re.sub(r'\s+', ' ', rubric)
                 #print(f"{assignment.name} {rubric}")
     
     max_points = getattr(assignment, "points_possible", None) #Get possible points
@@ -90,23 +91,24 @@ def bytes_text(bytes, filename):
     if filename.endswith(".pdf"):
         file = PdfReader(io.BytesIO(bytes))
         for content in file.pages:
-            content_text += str(content.extract_text)
+            content_text += re.sub(r'\s+', ' ', str(content.extract_text))
     elif filename.endswith(".pptx"):
         pres = Presentation(io.BytesIO(bytes))
         for slide in pres.slides:
             for shape in slide.shapes:
                 if hasattr(shape, 'text'):
-                    content_text += shape.text.strip()
+                    content_text += re.sub(r'\s+', ' ', shape.text)
     elif filename.endswith((".docx", ".doc")):
         file = Document(io.BytesIO(bytes))
         for content in file.paragraphs:
-            content_text += content.text
+            content_text += re.sub(r'\s+', ' ', content.text)
     else:
         try:
             content_text = bytes.decode("utf-8", errors="ignore")
+            content_text = re.sub(r'\s+', ' ', content_text)
         except Exception:
             return [] 
-    file_list = re.split(r"\.|\?|!|\n", content_text)
+    file_list = re.split(r"[.?!]\s", content_text)
     content_number = 1
     for content_text in file_list:
         file_contents.append({'content_number': content_number, 'content_text': content_text.strip()})
@@ -228,7 +230,8 @@ def syl_dicts(course_syllabi, course_objs): #Converts Syllabi to dictionary for 
             if total_syll: #case for a syllabus page
                 html = BeautifulSoup(total_syll, features="lxml") #Need to convert from html since Canvasapi only return the syllabus body as html
                 sentences = str(html.get_text())
-                sentences = re.split(r"\.|\?|!|\n", sentences) #Divide Syllabus into a list of sentences
+                sentences = re.sub(r'\s+', ' ', sentences)
+                sentences = re.split(r"[.?!]\s", sentences) #Divide Syllabus into a list of sentences
                 syllabus_sentance = 1
                 for sentance in sentences: #store each sentance from Syllabus into a dictionary so ai may summarize it
                     course_rows.append({         
@@ -344,7 +347,8 @@ practice test, or multiple-choice questions, you are allowed to generate new que
 but every question and answer must be based strictly on text found in the data 
 especially the “text” column from files.
 
-When generating a review sheet or summarizing information be concise and use bullet points.
+When generating a review sheet, study guide or summarizing information be concise and use bullet points to seperate infromation.
+When generating a review sheet, study guide or summarizing information generate simple responses only containing key informtation.
 Ensure data is delivered in a human readable format.
 
 Do not make up facts or add outside knowledge.
